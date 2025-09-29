@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+/**
+ * @title BlockID
+ * @dev A basic identity management smart contract allowing users to register and verify identities on the blockchain.
+ */
+contract BlockID {
+    struct Identity {
+        string name;
+        string nationalID;
+        bool isVerified;
+    }
+
+    mapping(address => Identity) private identities;
+    mapping(string => bool) private usedNationalIDs;
+
+    address public owner;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only contract owner can perform this action.");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    /**
+     * @dev Register a new identity.
+     */
+    function registerIdentity(string memory _name, string memory _nationalID) public {
+        require(bytes(_name).length > 0, "Name cannot be empty.");
+        require(bytes(_nationalID).length > 0, "National ID cannot be empty.");
+        require(!usedNationalIDs[_nationalID], "National ID already registered.");
+
+        identities[msg.sender] = Identity({
+            name: _name,
+            nationalID: _nationalID,
+            isVerified: false
+        });
+
+        usedNationalIDs[_nationalID] = true;
+    }
+
+    /**
+     * @dev Verify the identity of a registered user (only owner).
+     */
+    function verifyIdentity(address userAddress) public onlyOwner {
+        require(bytes(identities[userAddress].nationalID).length > 0, "Identity not found.");
+        identities[userAddress].isVerified = true;
+    }
+
+    /**
+     * @dev Retrieve identity information.
+     */
+    function getIdentity(address userAddress) public view returns (string memory, string memory, bool) {
+        Identity memory id = identities[userAddress];
+        require(bytes(id.nationalID).length > 0, "Identity not found.");
+        return (id.name, id.nationalID, id.isVerified);
+    }
+}
